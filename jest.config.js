@@ -3,6 +3,7 @@ module.exports = {
     coveragePathIgnorePatterns: ['/node_modules/'],
     testTimeout: 10000,
     verbose: true,
+    setupFiles: ['<rootDir>/jest.setup.js'],
     collectCoverageFrom: [
         'controllers/**/*.js',
         'models/**/*.js',
