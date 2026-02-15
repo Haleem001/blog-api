@@ -11,7 +11,7 @@ app.use(express.json());
 app.get('/', (req, res) => {
     res.status(200).json({
         status: 'success',
-        message: 'Blog API is running',
+        message: 'Welcome to my Blog API',
         endpoints: {
             auth: '/api/auth',
             blogs: '/api/blogs'
@@ -26,6 +26,15 @@ app.get('/health', (req, res) => {
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/blogs', blogRoutes);
+
+// Handle unhandled routes
+app.use((req, res, next) => {
+    const error = new Error(`Can't find ${req.originalUrl} on this server!`);
+    error.status = 'fail';
+    error.statusCode = 404;
+    error.isOperational = true;
+    next(error);
+});
 
 const globalErrorHandler = require('./middlewares/error.middleware');
 
