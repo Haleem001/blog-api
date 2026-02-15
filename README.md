@@ -1,6 +1,13 @@
 # Blogging API - Semester Examination Project
 A RESTful API for a blogging platform built with Node.js, Express, and MongoDB.
 
+## Live API
+
+The API is deployed on Heroku and can be accessed at:
+```
+https://mg-blog-api-0018a1b3f2e8.herokuapp.com/
+```
+
 ## Features
 
 ### User Management
