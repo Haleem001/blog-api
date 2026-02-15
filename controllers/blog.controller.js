@@ -30,9 +30,9 @@ exports.getAllBlogs = async (req, res, next) => {
         const skip = (page - 1) * limit;
 
         const query = { state: 'published' };
-        
+
         // Search by title, tags, or author name
-        if (search){
+        if (search) {
             // First, find users matching the search term
             const matchingUsers = await User.find({
                 $or: [
@@ -40,9 +40,9 @@ exports.getAllBlogs = async (req, res, next) => {
                     { last_name: { $regex: search, $options: 'i' } }
                 ]
             }).select('_id');
-            
+
             const userIds = matchingUsers.map(user => user._id);
-            
+
             query.$or = [
                 { title: { $regex: search, $options: 'i' } },
                 { description: { $regex: search, $options: 'i' } },
@@ -50,14 +50,14 @@ exports.getAllBlogs = async (req, res, next) => {
                 { author: { $in: userIds } }
             ];
         }
-        
-        if (req.query.author) { 
+
+        if (req.query.author) {
             query.author = req.query.author;
         }
         if (tag) {
             query.tags = tag;
         }
-        
+
         // Determine sort order
         let sortOption = { timestamp: -1 }; // Default: newest first
         if (orderBy) {
@@ -69,7 +69,7 @@ exports.getAllBlogs = async (req, res, next) => {
                 sortOption = { timestamp: -1 };
             }
         }
-        
+
         const blogs = await Blog.find(query)
             .populate('author', 'first_name last_name email') // Populate author details
             .sort(sortOption)
@@ -86,14 +86,12 @@ exports.getAllBlogs = async (req, res, next) => {
 
 exports.getBlogById = async (req, res, next) => {
     try {
-        // Use findByIdAndUpdate to increment read_count and return the blog in one go
-        const blog = await Blog.findByIdAndUpdate(
-            req.params.id,
-            { $inc: { read_count: 1 } }, // Increment read_count by 1
-            { returnDocument: 'after' }
-        ).populate('author', 'first_name last_name email'); // Return author details
+        const { id } = req.params;
 
-        if (!blog || blog.state !== 'published') {
+        // 1. Find the blog first to check permissions
+        const blog = await Blog.findById(id);
+
+        if (!blog) {
             const error = new Error('Blog not found');
             error.statusCode = 404;
             error.status = 'fail';
@@ -101,7 +99,34 @@ exports.getBlogById = async (req, res, next) => {
             return next(error);
         }
 
-        res.status(200).json({ status: 'success', data: blog , read_count: blog.read_count });
+        // 2. Determine if the user allows access
+        // - Published blogs are accessible to everyone
+        // - Draft blogs are only accessible to the owner
+        const isPublished = blog.state === 'published';
+        const isOwner = req.user && blog.author.toString() === req.user._id.toString();
+
+        if (!isPublished && !isOwner) {
+            const error = new Error('Blog not found');
+            error.statusCode = 404;
+            error.status = 'fail';
+            error.isOperational = true;
+            return next(error);
+        }
+
+        // 3. Increment read_count only if published
+        if (isPublished) {
+            const updatedBlog = await Blog.findByIdAndUpdate(
+                id,
+                { $inc: { read_count: 1 } },
+                { returnDocument: 'after' }
+            ).populate('author', 'first_name last_name email');
+
+            return res.status(200).json({ status: 'success', data: updatedBlog, read_count: updatedBlog.read_count });
+        } else {
+            // It's a draft (and user is owner), just return it without incrementing
+            await blog.populate('author', 'first_name last_name email');
+            return res.status(200).json({ status: 'success', data: blog, read_count: blog.read_count });
+        }
     } catch (err) {
         next(err);
     }
@@ -185,27 +210,27 @@ exports.getMyBlogs = async (req, res, next) => {
         const page = req.query.page ? parseInt(req.query.page) : 1;
         const limit = req.query.limit ? parseInt(req.query.limit) : 20;
         const skip = (page - 1) * limit;
-        
+
         // Build query
         const query = { author: req.user._id };
-        
+
         // Filter by state if provided
         if (req.query.state) {
             if (req.query.state === 'draft' || req.query.state === 'published') {
                 query.state = req.query.state;
             }
         }
-        
+
         // Find blogs with pagination
         const blogs = await Blog.find(query)
             .sort({ timestamp: -1 })
             .skip(skip)
             .limit(limit);
-        
+
         const total = await Blog.countDocuments(query);
-        
-        res.status(200).json({ 
-            status: 'success', 
+
+        res.status(200).json({
+            status: 'success',
             data: blogs,
             page,
             limit,

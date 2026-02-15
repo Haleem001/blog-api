@@ -318,7 +318,40 @@ describe('Blog Endpoints', () => {
             expect(secondResponse.body.data.read_count).toBe(initialReadCount + 1);
         });
 
-        it('should not return draft blogs', async () => {
+        it('should allowed owner to view their own draft blog', async () => {
+            const response = await request(app)
+                .get(`/api/blogs/${draftBlogId}`)
+                .set('Authorization', `Bearer ${authToken}`)
+                .expect(200);
+
+            expect(response.body.status).toBe('success');
+            expect(response.body.data.state).toBe('draft');
+        });
+
+        it('should NOT increment read_count when owner views draft', async () => {
+            const initialResponse = await request(app)
+                .get(`/api/blogs/${draftBlogId}`)
+                .set('Authorization', `Bearer ${authToken}`)
+                .expect(200);
+
+            const initialReadCount = initialResponse.body.data.read_count;
+
+            const secondResponse = await request(app)
+                .get(`/api/blogs/${draftBlogId}`)
+                .set('Authorization', `Bearer ${authToken}`)
+                .expect(200);
+
+            expect(secondResponse.body.data.read_count).toBe(initialReadCount); // Should be same
+        });
+
+        it('should return 404 for draft blog when requested by non-owner', async () => {
+            await request(app)
+                .get(`/api/blogs/${draftBlogId}`)
+                .set('Authorization', `Bearer ${anotherAuthToken}`)
+                .expect(404);
+        });
+
+        it('should not return draft blogs to unauthenticated users', async () => {
             await request(app)
                 .get(`/api/blogs/${draftBlogId}`)
                 .expect(404);

@@ -46,4 +46,29 @@ const protect = async (req, res, next) => {
     }
 };
 
-module.exports = { protect };
+const optionalProtect = async (req, res, next) => {
+    try {
+        let token;
+
+        if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
+            token = req.headers.authorization.split(' ')[1];
+        }
+
+        if (!token) {
+            return next();
+        }
+
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        const user = await User.findById(decoded.id).select('-password');
+
+        if (user) {
+            req.user = user;
+        }
+        next();
+    } catch (error) {
+        // If token is invalid or user not found, just proceed as guest
+        next();
+    }
+};
+
+module.exports = { protect, optionalProtect };
