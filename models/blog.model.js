@@ -28,7 +28,7 @@ const blogSchema = new mongoose.Schema({
         default: 0
     },
     reading_time: {
-        type: Number,
+        type: String,
     },
     tags: [String],
     timestamp: {
@@ -41,12 +41,11 @@ const blogSchema = new mongoose.Schema({
 
 
 // Pre-save hook to calculate reading time before saving to DB
-blogSchema.pre('save', function (next) {
+blogSchema.pre('save', function () {
     // Only recalculate if the body has changed
     if (this.isModified('body')) {
         this.reading_time = calculateReadingTime(this.body);
     }
-    next();
 });
 
 module.exports = mongoose.model('Blog', blogSchema);
