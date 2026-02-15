@@ -1,15 +1,18 @@
 /**
  * Calculates reading time in minutes
  * @param {string} content - The body of the blog
- * @returns {number} - Estimated time in minutes
+ * @returns {string} - Estimated time in minutes
  */
-const calculateReadingTime = (content) => {
+const calculateReadingTime = (content = "") => {
     const wordsPerMinute = 200;
-    // Split by whitespace and filter out empty strings to get accurate count
-    const words = content.trim().split(/\s+/).length;
-    const readingTime = Math.ceil(words / wordsPerMinute);
+    const words = content.trim()
+        ? content.trim().split(/\s+/).length
+        : 0;
 
-    return readingTime || 1; // Default to 1 minute if empty
+    const minutes = Math.ceil(words / wordsPerMinute);
+    return words > 0 && words < wordsPerMinute
+        ? "less than 1 min read"
+        : `${minutes} min read`;
 };
 
 module.exports = { calculateReadingTime };
