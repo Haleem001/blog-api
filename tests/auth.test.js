@@ -55,7 +55,7 @@ describe('Auth Endpoints', () => {
             const response = await request(app)
                 .post('/api/auth/signup')
                 .send(userData)
-                .expect(500);
+                .expect(400);
         });
 
         it('should fail to create user with duplicate email', async () => {
@@ -76,7 +76,7 @@ describe('Auth Endpoints', () => {
             await request(app)
                 .post('/api/auth/signup')
                 .send(userData)
-                .expect(500);
+                .expect(400);
         });
     });
 
