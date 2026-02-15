@@ -90,7 +90,7 @@ exports.getBlogById = async (req, res, next) => {
         const blog = await Blog.findByIdAndUpdate(
             req.params.id,
             { $inc: { read_count: 1 } }, // Increment read_count by 1
-            { new: true }
+            { returnDocument: 'after' }
         ).populate('author', 'first_name last_name email'); // Return author details
 
         if (!blog || blog.state !== 'published') {
@@ -137,7 +137,7 @@ exports.updateBlog = async (req, res, next) => {
         const updatedBlog = await Blog.findByIdAndUpdate(
             id,
             { title, description, body, tags, state },
-            { new: true, runValidators: true }
+            { returnDocument: 'after', runValidators: true }
         );
 
         res.status(200).json({ status: 'success', data: updatedBlog });
