@@ -13,7 +13,7 @@ exports.createBlog = async (req, res, next) => {
             tags,
             body,
             state: state || 'draft', // Defaults to draft if not provided
-            author: req.user._id     // Taken from your 'protect' middleware
+            author: req.user._id     // Taken from 'protect' middleware
         });
 
         res.status(201).json({ status: 'success', data: blog });
@@ -24,29 +24,29 @@ exports.createBlog = async (req, res, next) => {
 
 exports.getAllBlogs = async (req, res, next) => {
     try {
-        const { search, orderBy } = req.query;
+        const { search, orderBy, tag } = req.query;
         const page = req.query.page ? parseInt(req.query.page) : 1;
         const limit = req.query.limit ? parseInt(req.query.limit) : 20;
         const skip = (page - 1) * limit;
 
-        const { tag } = req.query;
         const query = { state: 'published' };
         
         // Search by title, tags, or author name
-        if (req.query.search){
+        if (search){
             // First, find users matching the search term
             const matchingUsers = await User.find({
                 $or: [
-                    { first_name: { $regex: req.query.search, $options: 'i' } },
-                    { last_name: { $regex: req.query.search, $options: 'i' } }
+                    { first_name: { $regex: search, $options: 'i' } },
+                    { last_name: { $regex: search, $options: 'i' } }
                 ]
             }).select('_id');
             
             const userIds = matchingUsers.map(user => user._id);
             
             query.$or = [
-                { title: { $regex: req.query.search, $options: 'i' } },
-                { tags: { $regex: req.query.search, $options: 'i' } },
+                { title: { $regex: search, $options: 'i' } },
+                { description: { $regex: search, $options: 'i' } },
+                { tags: { $regex: search, $options: 'i' } },
                 { author: { $in: userIds } }
             ];
         }
